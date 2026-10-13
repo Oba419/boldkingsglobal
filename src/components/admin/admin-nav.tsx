@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { ExternalLink, FolderTree, Inbox, LayoutDashboard, Menu, Package, Settings, ShoppingCart, X } from "lucide-react";
+import { ExternalLink, FolderTree, Inbox, LayoutDashboard, Menu, Package, Settings, ShoppingCart, UserRound, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/store/logo";
 import { LogoutButton } from "@/components/auth-form";
@@ -16,6 +16,7 @@ const LINKS = [
   { href: "/admin/categories", label: "Categories", icon: FolderTree },
   { href: "/admin/enquiries", label: "Enquiries", icon: Inbox },
   { href: "/admin/settings", label: "Settings", icon: Settings },
+  { href: "/admin/account", label: "My account", icon: UserRound },
 ];
 
 export function AdminNav({ adminName }: { adminName: string }) {
@@ -81,13 +82,13 @@ export function AdminNav({ adminName }: { adminName: string }) {
             </Link>
             <ThemeToggle className="hidden text-white lg:flex" />
           </div>
-          <div className="flex items-center gap-3 rounded-xl bg-white/[0.05] p-2.5">
+          <Link href="/admin/account" className="flex items-center gap-3 rounded-xl bg-white/[0.05] p-2.5 transition-colors hover:bg-white/[0.1]">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gold-gradient text-sm font-bold text-navy-950">{adminName.charAt(0).toUpperCase()}</span>
             <span className="min-w-0">
               <span className="block truncate text-sm font-medium text-white">{adminName}</span>
               <span className="block text-xs text-slate-500">Administrator</span>
             </span>
-          </div>
+          </Link>
           <LogoutButton className="btn-outline-light btn-sm w-full" redirectTo="/admin/login" />
         </div>
       </aside>

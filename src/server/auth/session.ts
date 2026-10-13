@@ -45,6 +45,15 @@ export async function destroySession(): Promise<void> {
   jar.delete(SESSION_COOKIE);
 }
 
+/** Deletes all of a user's sessions except the one making this request. */
+export async function revokeOtherSessions(userId: string): Promise<void> {
+  const jar = await cookies();
+  const token = jar.get(SESSION_COOKIE)?.value;
+  await db.session.deleteMany({
+    where: { userId, ...(token ? { tokenHash: { not: hashToken(token) } } : {}) },
+  });
+}
+
 /** Looks up a session token (exported for tests). */
 export async function userForToken(token: string | undefined): Promise<SessionUser | null> {
   if (!token || token.length > 200) return null;
