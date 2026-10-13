@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/server/db";
-import { invalidEnvKeys } from "@/server/env";
+import { envProblems } from "@/server/env";
 
 export const dynamic = "force-dynamic";
 
@@ -11,10 +11,10 @@ export const dynamic = "force-dynamic";
  * be reached.
  */
 export async function GET() {
-  const invalid = invalidEnvKeys();
-  if (invalid.length) {
+  const problems = envProblems();
+  if (Object.keys(problems).length) {
     return NextResponse.json(
-      { ok: false, problem: "configuration", invalidEnvironmentVariables: invalid, hint: "Set these in your hosting settings, then redeploy." },
+      { ok: false, problem: "configuration", environmentVariables: problems, hint: "Set these in your hosting settings (without quotes), then redeploy." },
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }

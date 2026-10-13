@@ -11,7 +11,9 @@ function run(cmd, args) {
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
-if (process.env.DATABASE_URL || process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL_UNPOOLED) {
+const DB_VARS = ["DATABASE_URL", "DIRECT_DATABASE_URL", "DATABASE_URL_UNPOOLED", "POSTGRES_PRISMA_URL", "POSTGRES_URL", "POSTGRES_URL_NON_POOLING"];
+
+if (DB_VARS.some((name) => process.env[name]?.trim())) {
   console.log("▶ Applying database migrations…");
   run("npx", ["prisma", "migrate", "deploy"]);
 } else {

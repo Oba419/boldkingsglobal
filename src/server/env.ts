@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { resolveSiteUrl } from "@/lib/site-url";
+import { normalizeEnv } from "@/lib/env-normalize";
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
@@ -30,7 +31,7 @@ let cached: ServerEnv | undefined;
 /** Validates environment variables once and returns them. Throws a readable error on misconfiguration. */
 export function getServerEnv(): ServerEnv {
   if (cached) return cached;
-  const result = envSchema.safeParse(process.env);
+  const result = envSchema.safeParse(normalizeEnv(process.env));
   if (!result.success) {
     const details = result.error.issues.map((i) => `  • ${i.path.join(".")}: ${i.message}`).join("\n");
     throw new Error(`Invalid environment configuration:\n${details}\nSee .env.example for the required variables.`);
@@ -39,10 +40,20 @@ export function getServerEnv(): ServerEnv {
   return cached;
 }
 
-/** Names of missing or invalid environment variables (never their values) — for the health check. */
-export function invalidEnvKeys(): string[] {
-  const result = envSchema.safeParse(process.env);
-  return result.success ? [] : [...new Set(result.error.issues.map((i) => String(i.path[0] ?? "unknown")))];
+/**
+ * Misconfigured environment variables for the health check: each name maps
+ * to "missing" or "invalid". Values are never included.
+ */
+export function envProblems(): Record<string, "missing" | "invalid"> {
+  const normalized = normalizeEnv(process.env);
+  const result = envSchema.safeParse(normalized);
+  if (result.success) return {};
+  const problems: Record<string, "missing" | "invalid"> = {};
+  for (const issue of result.error.issues) {
+    const key = String(issue.path[0] ?? "unknown");
+    problems[key] = normalized[key] === undefined ? "missing" : "invalid";
+  }
+  return problems;
 }
 
 export function appUrl(path = ""): string {
