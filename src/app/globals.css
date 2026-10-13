@@ -1,0 +1,346 @@
+@import "tailwindcss";
+
+/* Dark mode is class-based (html.dark) so the theme toggle can override the OS preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─── Semantic tokens (switch with the theme) ───────────────────────────────── */
+:root {
+  --background: #f8f9fc;
+  --card: #ffffff;
+  --surface: #f1f4f9;
+  --media: #ffffff;
+  --ink: #0b1220;
+  --muted: #5b667a;
+  --line: #e3e8f0;
+  --primary: #0b1220;
+  --primary-fg: #ffffff;
+  --primary-hover: #1b2640;
+
+  --success: #15803d;
+  --success-bg: #ecfdf3;
+  --danger: #b91c1c;
+  --danger-bg: #fef2f2;
+  --warn: #a16207;
+  --warn-bg: #fefce8;
+  --info: #1d4ed8;
+  --info-bg: #eff6ff;
+
+  --shadow-color: 15 23 42;
+  color-scheme: light;
+}
+
+.dark {
+  --background: #05080f;
+  --card: #0b1220;
+  --surface: #111a2c;
+  --media: #f3f4f6;
+  --ink: #edf1f7;
+  --muted: #94a0b6;
+  --line: #1d2840;
+  --primary: #edf1f7;
+  --primary-fg: #0b1220;
+  --primary-hover: #ffffff;
+
+  --success: #4ade80;
+  --success-bg: rgb(34 197 94 / 0.12);
+  --danger: #f87171;
+  --danger-bg: rgb(239 68 68 / 0.12);
+  --warn: #facc15;
+  --warn-bg: rgb(234 179 8 / 0.12);
+  --info: #93c5fd;
+  --info-bg: rgb(59 130 246 / 0.14);
+
+  --shadow-color: 0 0 0;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-cinzel), "Times New Roman", serif;
+
+  --color-background: var(--background);
+  --color-card: var(--card);
+  --color-surface: var(--surface);
+  --color-media: var(--media);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-primary: var(--primary);
+  --color-primary-fg: var(--primary-fg);
+  --color-primary-hover: var(--primary-hover);
+
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+
+  --shadow-card: 0 1px 2px rgb(var(--shadow-color) / 0.04), 0 8px 24px -8px rgb(var(--shadow-color) / 0.08);
+  --shadow-lift: 0 2px 6px rgb(var(--shadow-color) / 0.06), 0 24px 48px -16px rgb(var(--shadow-color) / 0.22);
+  --shadow-glow: 0 0 0 1px rgb(214 168 79 / 0.35), 0 12px 40px -12px rgb(214 168 79 / 0.45);
+}
+
+/* ─── Brand palette (fixed) ─────────────────────────────────────────────────── */
+@theme {
+  --color-navy-950: #070d1a;
+  --color-navy-900: #0d1628;
+  --color-navy-800: #16213a;
+  --color-navy-700: #22304f;
+  --color-navy-600: #34436a;
+
+  --color-gold-200: #f6e3b4;
+  --color-gold-300: #ecd08f;
+  --color-gold-400: #e2bb6a;
+  --color-gold-500: #d6a84f;
+  --color-gold-600: #b98d36;
+  --color-gold-700: #94701f;
+  /* Darkened gold for small text on light backgrounds (WCAG AA). */
+  --color-gold-800: #7a5c1c;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-fade-up: fade-up 0.7s var(--ease-out-expo) both;
+  --animate-fade-in: fade-in 0.5s ease-out both;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-pop: pop 0.35s var(--ease-out-expo);
+  --animate-glow: glow 4s ease-in-out infinite;
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+  @keyframes pop {
+    0% { transform: scale(0.6); }
+    60% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+  @keyframes slide-in {
+    from { transform: translateX(-100%); }
+    to { transform: none; }
+  }
+  @keyframes glow {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: 8rem;
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background font-sans text-ink antialiased;
+    font-feature-settings: "ss01", "cv11";
+    text-rendering: optimizeLegibility;
+  }
+  /* Smooth colour change when switching theme. */
+  body,
+  .card,
+  .input,
+  header,
+  aside {
+    transition:
+      background-color 0.35s ease,
+      border-color 0.35s ease,
+      color 0.35s ease;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply tracking-tight text-balance;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-gold-500);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  ::selection {
+    background: var(--color-gold-300);
+    color: var(--color-navy-950);
+  }
+  dialog::backdrop {
+    background: rgb(5 8 15 / 0.6);
+    backdrop-filter: blur(4px);
+  }
+}
+
+/* ─── Utilities ─────────────────────────────────────────────────────────────── */
+
+@utility btn {
+  @apply relative inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl px-5 text-sm font-semibold whitespace-nowrap transition-all duration-200 ease-out select-none active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50;
+}
+
+@utility text-gold-gradient {
+  background: linear-gradient(110deg, #f6e3b4 0%, #e2bb6a 30%, #b98d36 55%, #ecd08f 80%, #d6a84f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility bg-gold-gradient {
+  background-image: linear-gradient(120deg, #f2d998 0%, #d6a84f 45%, #b98d36 75%, #e2bb6a 100%);
+}
+
+/* Deep navy with soft gold and blue glows — used for hero and brand panels. */
+@utility bg-brand-gradient {
+  background-color: var(--color-navy-950);
+  background-image:
+    radial-gradient(60% 80% at 85% 10%, rgb(214 168 79 / 0.22), transparent 60%),
+    radial-gradient(50% 60% at 10% 90%, rgb(59 92 170 / 0.25), transparent 60%),
+    linear-gradient(180deg, #0a1324 0%, #070d1a 100%);
+}
+
+@utility bg-grid {
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+
+@utility skeleton {
+  background: linear-gradient(90deg, var(--surface) 0%, var(--line) 50%, var(--surface) 100%);
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+
+/* Elements fade up as they scroll into view (see components/ui/reveal.tsx).
+   Only hidden when scripts run, so content is never lost without JavaScript. */
+.js .reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.8s var(--ease-out-expo),
+    transform 0.8s var(--ease-out-expo);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.js .reveal[data-visible="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+/* ─── Components ────────────────────────────────────────────────────────────── */
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary text-primary-fg shadow-sm hover:-translate-y-px hover:bg-primary-hover hover:shadow-lift;
+  }
+  .btn-gold {
+    @apply btn bg-gold-gradient text-navy-950 shadow-[0_8px_24px_-10px_rgb(214_168_79/0.8)] hover:-translate-y-px hover:shadow-glow;
+    background-size: 200% 100%;
+    background-position: 0% 0%;
+  }
+  .btn-gold:hover {
+    background-position: 100% 0%;
+  }
+  /* Light sweep across gold buttons on hover. */
+  .btn-gold::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.45) 50%, transparent 65%);
+    transform: translateX(-120%);
+    transition: transform 0.7s var(--ease-out-expo);
+  }
+  .btn-gold:hover::after {
+    transform: translateX(120%);
+  }
+  .btn-outline {
+    @apply btn border border-line bg-card text-ink hover:-translate-y-px hover:border-gold-500/60 hover:shadow-card;
+  }
+  .btn-outline-light {
+    @apply btn border border-white/20 bg-white/5 text-white backdrop-blur hover:border-gold-400/70 hover:bg-white/10;
+  }
+  .btn-ghost {
+    @apply btn text-ink hover:bg-surface;
+  }
+  .btn-danger {
+    @apply btn bg-danger text-white hover:opacity-90;
+  }
+  .btn-sm {
+    @apply min-h-9 rounded-lg px-3 text-xs;
+  }
+
+  .input {
+    @apply block min-h-11 w-full rounded-xl border border-line bg-card px-3.5 text-sm text-ink shadow-[inset_0_1px_2px_rgb(var(--shadow-color)/0.04)] placeholder:text-muted/70 hover:border-muted/40 focus:border-gold-500 focus:ring-4 focus:ring-gold-500/15 focus:outline-none disabled:bg-surface aria-[invalid=true]:border-danger aria-[invalid=true]:ring-danger/15;
+  }
+  textarea.input {
+    @apply py-2.5;
+  }
+  select.input {
+    @apply cursor-pointer;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-ink;
+  }
+  .field-error {
+    @apply mt-1.5 text-sm text-danger;
+  }
+  .card {
+    @apply rounded-2xl border border-line bg-card shadow-card;
+  }
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-xs font-semibold tracking-[0.22em] text-gold-800 uppercase dark:text-gold-400;
+  }
+  .eyebrow::before {
+    content: "";
+    @apply h-px w-6 bg-gold-gradient;
+  }
+  .section-title {
+    @apply text-2xl font-bold tracking-tight text-ink sm:text-3xl lg:text-4xl;
+  }
+  .prose-page h2 {
+    @apply mt-10 mb-3 text-xl font-semibold text-ink;
+  }
+  .prose-page h3 {
+    @apply mt-6 mb-2 text-base font-semibold text-ink;
+  }
+  .prose-page p,
+  .prose-page li {
+    @apply leading-7 text-ink/80;
+  }
+  .prose-page ul {
+    @apply my-3 list-disc space-y-1 pl-6 marker:text-gold-500;
+  }
+  .prose-page a {
+    @apply font-medium text-ink underline decoration-gold-500/60 underline-offset-4 hover:decoration-gold-500;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .js .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}

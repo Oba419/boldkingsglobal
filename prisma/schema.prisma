@@ -1,0 +1,354 @@
+// Bold Kings Global — database schema
+//
+// Money: every monetary column is a PostgreSQL NUMERIC(14,2) holding naira.
+// Application code converts these to integer kobo (see src/lib/money.ts) so no
+// floating-point arithmetic is ever performed on money.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  PAY_ON_DELIVERY
+  BANK_TRANSFER
+  PAYSTACK
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  ABANDONED
+}
+
+enum InventoryReason {
+  INITIAL
+  ADJUSTMENT
+  ORDER_PLACED
+  ORDER_CANCELLED
+  PAYMENT_FAILED
+}
+
+enum EnquiryStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  phone        String?
+  passwordHash String
+  role         Role      @default(CUSTOMER)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions     Session[]
+  orders       Order[]
+  cartItems    CartItem[]
+  auditLogs    AuditLog[]
+  orderNotes   OrderNote[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userAgent String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  image       String?
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+
+  @@index([isActive, sortOrder])
+}
+
+model Product {
+  id             String           @id @default(cuid())
+  name           String
+  slug           String           @unique
+  description    String
+  brand          String
+  sku            String?          @unique
+  categoryId     String
+  category       Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  price          Decimal          @db.Decimal(14, 2)
+  compareAtPrice Decimal?         @db.Decimal(14, 2)
+  images         String[]
+  /// Array of { label: string, value: string }
+  specifications Json             @default("[]")
+  isActive       Boolean          @default(true)
+  isFeatured     Boolean          @default(false)
+  archivedAt     DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  variants       ProductVariant[]
+  orderItems     OrderItem[]
+
+  @@index([categoryId, isActive])
+  @@index([brand])
+  @@index([createdAt])
+  @@index([isFeatured, isActive])
+}
+
+model ProductVariant {
+  id                 String              @id @default(cuid())
+  productId          String
+  product            Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// Human-readable label, e.g. "256GB / Black". Simple products use "Standard".
+  name               String
+  /// Optional structured attributes, e.g. { "Storage": "256GB", "Colour": "Black" }
+  attributes         Json?
+  sku                String              @unique
+  /// When null the product's base price applies.
+  priceOverride      Decimal?            @db.Decimal(14, 2)
+  /// Guarded by a CHECK (stock >= 0) constraint in the migration.
+  stock              Int                 @default(0)
+  isActive           Boolean             @default(true)
+  sortOrder          Int                 @default(0)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  orderItems         OrderItem[]
+  inventoryMovements InventoryMovement[]
+  cartItems          CartItem[]
+
+  @@index([productId])
+}
+
+model Order {
+  id                   String               @id @default(cuid())
+  reference            String               @unique
+  /// Random salt; the guest access token is HMAC(SESSION_SECRET, id + salt).
+  /// The token itself is never stored.
+  accessSalt           String
+  idempotencyKey       String               @unique
+  userId               String?
+  user                 User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  customerName         String
+  customerPhone        String
+  customerEmail        String?
+  deliveryState        String
+  deliveryCity         String
+  deliveryAddress      String
+  deliveryInstructions String?
+  subtotal             Decimal              @db.Decimal(14, 2)
+  /// Null means the delivery fee is not configured and will be confirmed by the store.
+  deliveryFee          Decimal?             @db.Decimal(14, 2)
+  total                Decimal              @db.Decimal(14, 2)
+  currency             String               @default("NGN")
+  paymentMethod        PaymentMethod
+  paymentStatus        PaymentStatus        @default(UNPAID)
+  status               OrderStatus          @default(PENDING)
+  inventoryRestored    Boolean              @default(false)
+  cancelledAt          DateTime?
+  deliveredAt          DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  items                OrderItem[]
+  payments             PaymentTransaction[]
+  notes                OrderNote[]
+
+  @@index([status, createdAt])
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@index([customerPhone])
+  @@index([userId])
+}
+
+model OrderItem {
+  id          String          @id @default(cuid())
+  orderId     String
+  order       Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variantId   String?
+  variant     ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  // Snapshots preserved at purchase time
+  productName String
+  productSlug String
+  sku         String
+  variantName String?
+  image       String?
+  unitPrice   Decimal         @db.Decimal(14, 2)
+  quantity    Int
+  lineTotal   Decimal         @db.Decimal(14, 2)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model OrderNote {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+}
+
+model PaymentTransaction {
+  id               String            @id @default(cuid())
+  orderId          String
+  order            Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider         String
+  reference        String            @unique
+  amount           Decimal           @db.Decimal(14, 2)
+  currency         String            @default("NGN")
+  status           TransactionStatus @default(PENDING)
+  authorizationUrl String?
+  providerResponse Json?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([orderId])
+}
+
+/// Every processed webhook is recorded so redelivered events are ignored.
+model WebhookEvent {
+  id        String   @id @default(cuid())
+  provider  String
+  eventKey  String   @unique
+  type      String
+  payload   Json
+  createdAt DateTime @default(now())
+}
+
+model InventoryMovement {
+  id         String          @id @default(cuid())
+  variantId  String
+  variant    ProductVariant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  change     Int
+  stockAfter Int
+  reason     InventoryReason
+  orderId    String?
+  actorId    String?
+  note       String?
+  createdAt  DateTime        @default(now())
+
+  @@index([variantId, createdAt])
+  @@index([orderId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action     String
+  entityType String
+  entityId   String
+  details    Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+/// Singleton row (id = 1). Secrets never live here — they belong in environment variables.
+model StoreSettings {
+  id                   Int      @id @default(1)
+  businessName         String
+  phonePrimary         String
+  phoneSecondary       String?
+  whatsappNumber       String?
+  supportEmail         String?
+  address              String?
+  currency             String   @default("NGN")
+  /// Null = delivery fee not configured; it is confirmed with the customer after ordering.
+  deliveryFee          Decimal? @db.Decimal(14, 2)
+  deliveryNotes        String?
+  payOnDeliveryEnabled Boolean  @default(false)
+  bankTransferEnabled  Boolean  @default(false)
+  bankName             String?
+  bankAccountName      String?
+  bankAccountNumber    String?
+  announcementEnabled  Boolean  @default(false)
+  announcementText     String?
+  updatedAt            DateTime @updatedAt
+}
+
+model ContactEnquiry {
+  id        String        @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  subject   String
+  message   String
+  status    EnquiryStatus @default(NEW)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([status, createdAt])
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+model CartItem {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  quantity  Int
+  updatedAt DateTime       @updatedAt
+
+  @@unique([userId, variantId])
+}
+
+/// Fixed-window rate-limit counters, stored in the database so limits hold
+/// across multiple server instances.
+model RateLimit {
+  key         String   @id
+  count       Int
+  windowStart DateTime
+}
