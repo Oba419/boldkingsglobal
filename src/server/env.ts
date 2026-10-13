@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { resolveSiteUrl } from "@/lib/site-url";
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
@@ -9,7 +10,8 @@ const envSchema = z.object({
     .refine((v) => v.startsWith("postgres://") || v.startsWith("postgresql://"), "DATABASE_URL must be a PostgreSQL connection string"),
   /** Optional cap on pooled connections (small Postgres plans, serverless hosts). */
   DATABASE_POOL_MAX: z.preprocess((v) => (v === "" || v === undefined ? undefined : v), z.coerce.number().int().min(1).max(100).optional()),
-  APP_URL: z.url("APP_URL must be a full URL such as http://localhost:3000").default("http://localhost:3000"),
+  // Falls back to the Vercel production domain, so payment callbacks work even if APP_URL is unset.
+  APP_URL: z.preprocess(() => resolveSiteUrl(), z.url()),
   SESSION_SECRET: z
     .string({ error: "SESSION_SECRET is required" })
     .min(32, "SESSION_SECRET must be at least 32 characters")

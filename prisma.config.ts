@@ -8,8 +8,9 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    // A placeholder keeps `prisma generate` working before .env exists;
-    // commands that touch the database require a real DATABASE_URL.
-    url: process.env.DATABASE_URL ?? "postgresql://placeholder:placeholder@localhost:5432/placeholder",
+    // CLI commands (migrations) prefer a direct, non-pooled connection when one
+    // is provided. A placeholder keeps `prisma generate` working before .env
+    // exists; commands that touch the database require a real URL.
+    url: process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL || "postgresql://placeholder:placeholder@localhost:5432/placeholder",
   },
 });

@@ -30,7 +30,8 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 | --- | --- | --- |
 | `DATABASE_URL` | yes | PostgreSQL connection string |
 | `SESSION_SECRET` | yes | ≥ 32 chars. Signs sessions and guest order links. Changing it invalidates existing guest order links. |
-| `APP_URL` | yes in production | Public base URL, used for payment callbacks, the sitemap and canonical links |
+| `APP_URL` | recommended | Public base URL for payment callbacks, the sitemap and canonical links. On Vercel it falls back to the production domain. |
+| `DIRECT_DATABASE_URL` | for pooled databases | Direct (non-pooled) connection used only for migrations, e.g. Neon's non-"-pooler" URL |
 | `PAYSTACK_SECRET_KEY` | no | Enables online payment. Leave empty to disable it. |
 | `DATABASE_POOL_MAX` | no | Caps pooled DB connections per instance (small plans and serverless hosts) |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` | only for `admin:create` | Remove after provisioning |
