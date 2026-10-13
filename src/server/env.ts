@@ -39,6 +39,12 @@ export function getServerEnv(): ServerEnv {
   return cached;
 }
 
+/** Names of missing or invalid environment variables (never their values) — for the health check. */
+export function invalidEnvKeys(): string[] {
+  const result = envSchema.safeParse(process.env);
+  return result.success ? [] : [...new Set(result.error.issues.map((i) => String(i.path[0] ?? "unknown")))];
+}
+
 export function appUrl(path = ""): string {
   return new URL(path, getServerEnv().APP_URL).toString();
 }
